@@ -6,6 +6,7 @@ import (
 )
 
 type Interface interface {
+	Name() string
 	Run(ctx context.Context, out io.Writer) error
 }
 

@@ -15,8 +15,20 @@ type Job struct {
 }
 
 func (j *Job) Run(ctx context.Context, out io.Writer) error {
+	for _, step := range j.Steps {
+		fmt.Fprintf(out, "--- STEP %s ---\n", step.Name())
+		if err := step.Run(ctx, out); err != nil {
+			fmt.Fprintf(out, "%v\n", err)
+			fmt.Fprintln(out, "--- FAILED ---")
+			return nil
+		}
+	}
+	fmt.Fprintln(out, "--- SUCCESS ---")
+	return nil
+}
+
+func (j *Job) Watch(ctx context.Context, out io.Writer) error {
 	resources := resources.List(j.Resources)
-	steps := steps.List(j.Steps)
 
 	// IF continuous
 	wch, err := resources.Watch(ctx)
@@ -24,11 +36,9 @@ func (j *Job) Run(ctx context.Context, out io.Writer) error {
 		panic(err)
 	}
 
-	// run once at start:
-	if err := steps.Run(ctx, out); err != nil {
-		fmt.Fprintln(out, "--- FAILED ---")
-	} else {
-		fmt.Fprintln(out, "--- SUCCESS ---")
+	// run once at start
+	if err := j.Run(ctx, out); err != nil {
+		return err
 	}
 
 	// IF continuous
@@ -36,12 +46,9 @@ func (j *Job) Run(ctx context.Context, out io.Writer) error {
 		if evnt.Err != nil {
 			panic(evnt.Err)
 		}
-		if err := steps.Run(ctx, out); err != nil {
-			fmt.Fprintln(out, "--- FAILED ---")
-		} else {
-			fmt.Fprintln(out, "--- SUCCESS ---")
+		if err := j.Run(ctx, out); err != nil {
+			return err
 		}
 	}
-
 	return nil
 }

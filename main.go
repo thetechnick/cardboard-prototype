@@ -22,7 +22,22 @@ func main() {
 			steps.Run("unit-test", "./hack/scripts/test.sh", nil),
 		},
 	}
+	var _ = testjob
 
+	src := resources.Folder("src", ".")
+
+	// BuildJob
+	buildJob := job.Job{
+		Resources: []resources.Interface{
+			src,
+		},
+		Steps: []steps.Interface{
+			steps.Run("go-build", "go", []string{"build", "-v", "-o", "bin/cardboard", "./cmd/cardboard"}),
+			// TODO: reusable thing?
+			steps.Run("image-build", "podman", []string{"build", "-f", "config/images/cardboard.Containerfile", "-o", "bin/cardboard.tar.gz", "."}),
+			// step.Put? src.PutStep
+		},
+	}
 	// Build Container
 	// - compile
 	// - (assemble image contents)
@@ -35,7 +50,11 @@ func main() {
 	ctx := internal.SetupSignalHandler()
 	ctx = logr.NewContext(ctx, logger)
 
-	if err := testjob.Run(ctx, os.Stdout); err != nil {
+	if err := buildJob.Run(ctx, os.Stdout); err != nil {
 		panic(err)
 	}
+
+	// if err := testjob.Run(ctx, os.Stdout); err != nil {
+	// 	panic(err)
+	// }
 }

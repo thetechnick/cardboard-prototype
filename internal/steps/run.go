@@ -17,6 +17,24 @@ type run struct {
 	internal.Named
 	Path string
 	Args []string
+
+	Inputs  []Input
+	Outputs []Output
+}
+
+const (
+	WorkDirInputName = "_WorkDir"
+	ImageInputName   = "_Image"
+)
+
+type Input struct {
+	internal.Named
+	Path string // optional
+}
+
+type Output struct {
+	internal.Named
+	Path string // optional
 }
 
 func Run(name, path string, args []string) *run {
